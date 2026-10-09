@@ -158,8 +158,12 @@ export function AgendaCalendar({
           {view === "days" ? (
             <div className="mt-3 grid grid-cols-7 gap-1 text-center text-xs">
               {WEEKDAYS_AR.map((w) => (
-                <div key={w} className="py-1 text-muted-foreground">
-                  {w.slice(0, 3)}
+                <div
+                  key={w}
+                  title={w}
+                  className="min-w-0 overflow-hidden px-0.5 py-1 text-[10px] leading-tight text-muted-foreground"
+                >
+                  {w}
                 </div>
               ))}
               {cells.map((day, i) => {

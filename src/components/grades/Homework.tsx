@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { formatDayLabel, type AgendaRow } from "@/components/agenda/useAgenda";
 import { applyAgendaFilter, type AgendaFilter } from "@/components/grades/AgendaFilters";
+import { trimesterOf } from "@/lib/trimesters";
 
 type Client = SupabaseClient<Database>;
 type ClassRow = Database["public"]["Tables"]["classes"]["Row"];

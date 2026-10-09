@@ -288,8 +288,12 @@ export function AddGradeButton(props: {
 
 /* ------------------------------ Student side ------------------------------ */
 
-export function StudentGrades({ client, classId, studentId }: { client: Client; classId: string | null; studentId: string }) {
-  const { rows, loading } = useEvaluations(client, classId ? [classId] : []);
+export function StudentGrades({ client, classId, studentId, trimester = "" }: { client: Client; classId: string | null; studentId: string; trimester?: string }) {
+  const { rows: allRows, loading } = useEvaluations(client, classId ? [classId] : []);
+  const rows = useMemo(
+    () => (trimester ? allRows.filter((r) => trimesterOf(r.event_date) === trimester) : allRows),
+    [allRows, trimester],
+  );
   const [grades, setGrades] = useState<GradeRow[]>([]);
   useEffect(() => {
     client

@@ -238,8 +238,12 @@ export function TeacherHomeworks({ client, classes, filter }: { client: Client; 
 
 /* ---------------- Student side ---------------- */
 
-export function StudentHomeworks({ client, classId, studentId }: { client: Client; classId: string | null; studentId: string }) {
-  const { rows, loading } = useHomeworks(client, classId ? [classId] : []);
+export function StudentHomeworks({ client, classId, studentId, trimester = "" }: { client: Client; classId: string | null; studentId: string; trimester?: string }) {
+  const { rows: allRows, loading } = useHomeworks(client, classId ? [classId] : []);
+  const rows = useMemo(
+    () => (trimester ? allRows.filter((r) => trimesterOf(r.event_date) === trimester) : allRows),
+    [allRows, trimester],
+  );
   const [status, setStatus] = useState<StatusRow[]>([]);
   useEffect(() => {
     client

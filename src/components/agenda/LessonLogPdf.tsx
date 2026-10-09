@@ -7,14 +7,14 @@ type ClassRow = Database["public"]["Tables"]["classes"]["Row"];
 type LogRow = Database["public"]["Tables"]["lesson_logs"]["Row"];
 
 const esc = (s: string) =>
-  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] ?? c);
 const short = (t: string) => t.slice(0, 5);
 const fmtDay = (d: string) =>
   new Date(`${d}T12:00:00`).toLocaleDateString("ar-DZ", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
 function monthBounds(dateKey: string) {
   const [y, m] = dateKey.split("-").map(Number);
-  const last = new Date(y!, m!, 0).getDate();
+   const last = new Date(y ?? 2026, m ?? 1, 0).getDate();
   const mm = String(m).padStart(2, "0");
   return { from: `${y}-${mm}-01`, to: `${y}-${mm}-${String(last).padStart(2, "0")}` };
 }
@@ -26,6 +26,7 @@ function buildHtml(
   to: string,
   teacherName: string,
   levelNames: string[],
+  schoolName = "",
 ) {
   const byDay = new Map<string, LogRow[]>();
   rows.forEach((r) => byDay.set(r.log_date, [...(byDay.get(r.log_date) ?? []), r]));
@@ -46,7 +47,7 @@ function buildHtml(
           (r) => `
         <article class="entry">
           <div class="time"><b>${short(r.start_time)}</b><span>${short(r.end_time)}</span></div>
-          <div class="body"><span class="tag">${esc(cls(r.class_id))}</span><p>${esc(r.content)}</p></div>
+          <div class="body"><span class="tag" dir="auto">${esc(cls(r.class_id))}</span><p dir="rtl">${esc(r.content)}</p></div>
         </article>`,
         )
         .join("")}
@@ -54,7 +55,7 @@ function buildHtml(
     )
     .join("");
   return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
-<title>دفتر الدروس ${from} — ${to}</title>
+<title>المذكرة ${from} — ${to}</title>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -62,6 +63,7 @@ function buildHtml(
   header { border-radius: 14px; padding: 22px 26px; color: #fff;
     background: linear-gradient(135deg, #14532d 0%, #1f7a4a 60%, #c9a227 140%); position: relative; overflow: hidden; }
   header h1 { font-family: Amiri, serif; font-size: 28pt; margin: 0 0 4px; }
+  header .school { font-size: 14pt; font-weight: 700; opacity: 1; margin-bottom: 6px; }
   header p { margin: 0 0 3px; opacity: .92; font-size: 11pt; }
   header .teacher { font-family: Amiri, serif; font-size: 21pt; font-weight: 700; opacity: 1; margin: 12px 0 8px; line-height: 1.35; }
   header .teacher span { display: block; font-family: Cairo, sans-serif; font-size: 11pt; font-weight: 600; opacity: .85; margin-bottom: 2px; }
@@ -74,13 +76,13 @@ function buildHtml(
   .day h2 { font-size: 12.5pt; color: #14532d; margin: 0 0 8px; padding-bottom: 5px;
     border-bottom: 2px solid #c9a227; display: flex; align-items: center; gap: 8px; }
   .dot { width: 9px; height: 9px; border-radius: 50%; background: #c9a227; display: inline-block; }
-  .entry { display: flex; gap: 12px; margin-bottom: 8px; }
+  .entry { display: flex; align-items: stretch; gap: 12px; margin-bottom: 8px; break-inside: avoid; }
   .time { width: 68px; flex-shrink: 0; text-align: center; border-radius: 8px; background: #e8f3ec;
     color: #14532d; padding: 8px 4px; direction: ltr; }
   .time b { display: block; font-size: 12pt; } .time span { font-size: 9pt; }
-  .body { flex: 1; border: 1px solid #e3e8e4; border-right: 4px solid #1f7a4a; border-radius: 8px; padding: 8px 12px; }
-  .tag { font-size: 15pt; font-weight: 700; background: #fbf4dc; color: #8a6d12; padding: 6px 20px; border-radius: 99px; }
-  .body p { margin: 6px 0 0; white-space: pre-wrap; line-height: 1.7; }
+  .body { flex: 1; min-width: 0; border: 1px solid #e3e8e4; border-right: 4px solid #1f7a4a; border-radius: 8px; padding: 8px 12px; }
+  .tag { display: inline-block; font-size: 15pt; font-weight: 700; line-height: 1.5; background: #fbf4dc; color: #8a6d12; padding: 6px 20px; border-radius: 99px; }
+  .body p { margin: 10px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; text-align: right; line-height: 1.9; letter-spacing: 0; }
   .empty { text-align: center; color: #6b7a71; padding: 40px; }
   footer { margin-top: 24px; display: flex; justify-content: space-between; font-size: 9pt; color: #6b7a71;
     border-top: 1px solid #e3e8e4; padding-top: 8px; }
@@ -88,7 +90,8 @@ function buildHtml(
   .sign div { width: 40%; border-top: 1px dashed #9aa79f; padding-top: 6px; text-align: center; }
 </style></head><body>
 <header>
-  <h1>دفتر الدروس</h1>
+  ${schoolName ? `<p class="school">${esc(schoolName)}</p>` : ""}
+  <h1>المذكرة</h1>
   ${teacherName ? `<p class="teacher"><span>الأستاذ(ة)</span>${esc(teacherName)}</p>` : ""}
   ${levelNames.length ? `<p>المستويات: ${esc(levelNames.join("، "))}</p>` : ""}
   ${usedClassNames.length ? `<p class="classes">الأقسام: ${esc(usedClassNames.join("، "))}</p>` : ""}
@@ -123,6 +126,7 @@ export function LessonLogPdfButton({
   const [open, setOpen] = useState(false);
   const [from, setFrom] = useState(init.from);
   const [to, setTo] = useState(init.to);
+  const [classId, setClassId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -131,27 +135,31 @@ export function LessonLogPdfButton({
     setError(null);
     setBusy(true);
     try {
-      const [logsRes, profileRes, levelsRes] = await Promise.all([
-        client
-          .from("lesson_logs")
-          .select("*")
-          .eq("teacher_id", teacherId)
-          .gte("log_date", from)
-          .lte("log_date", to)
-          .order("log_date")
-          .order("start_time"),
+      let query = client
+        .from("lesson_logs")
+        .select("*")
+        .eq("teacher_id", teacherId)
+        .gte("log_date", from)
+        .lte("log_date", to)
+        .order("log_date")
+        .order("start_time");
+      if (classId) query = query.eq("class_id", classId);
+      const [logsRes, profileRes, levelsRes, schoolRes] = await Promise.all([
+        query,
         client.from("profiles").select("full_name").eq("id", teacherId).maybeSingle(),
         client.from("levels").select("id, name"),
+        (client as any).from("school_settings").select("name").maybeSingle(),
       ]);
       if (logsRes.error) return setError("تعذّر تحميل الحصص.");
       const rows = logsRes.data ?? [];
       const name = teacherName || profileRes.data?.full_name?.trim() || "";
       const levelById = new Map((levelsRes.data ?? []).map((l) => [l.id, l.name]));
+      const scopeClasses = classId ? classes.filter((c) => c.id === classId) : classes;
       const levelNames = [
-        ...new Set(classes.map((c) => (c.level_id ? levelById.get(c.level_id) : undefined)).filter(Boolean)),
+        ...new Set(scopeClasses.map((c) => (c.level_id ? levelById.get(c.level_id) : undefined)).filter(Boolean)),
       ] as string[];
 
-      const html = buildHtml(rows, classes, from, to, name, levelNames);
+      const html = buildHtml(rows, scopeClasses, from, to, name, levelNames, schoolRes.data?.name?.trim() ?? "");
 
       // Render the document off-screen, capture it, then save a real PDF file.
       const iframe = document.createElement("iframe");
@@ -162,35 +170,33 @@ export function LessonLogPdfButton({
       iframe.style.height = "1123px";
       document.body.appendChild(iframe);
       try {
-        const doc = iframe.contentDocument!;
+        const doc = iframe.contentDocument;
+        if (!doc) throw new Error("PDF document unavailable");
         doc.open();
         doc.write(html);
         doc.close();
-        await (iframe.contentWindow as Window & { document: Document }).document.fonts.ready;
-        await new Promise((r) => setTimeout(r, 400));
-        iframe.style.height = `${doc.body.scrollHeight}px`;
-
-        // html2canvas draws the iframe content using the *main* document's fonts:
-        // load the Arabic fonts here too, otherwise Arabic falls back and breaks.
-        if (!document.getElementById("lesson-pdf-fonts")) {
-          const link = document.createElement("link");
-          link.id = "lesson-pdf-fonts";
-          link.rel = "stylesheet";
-          link.href =
-            "https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;600;700&display=swap";
-          document.head.appendChild(link);
+        const stylesheet = doc.querySelector<HTMLLinkElement>('link[rel="stylesheet"]');
+        if (stylesheet && !stylesheet.sheet) {
+          await new Promise<void>((resolve, reject) => {
+            stylesheet.onload = () => resolve();
+            stylesheet.onerror = () => reject(new Error("PDF fonts unavailable"));
+          });
         }
         await Promise.all([
-          document.fonts.load('400 16px "Cairo"'),
-          document.fonts.load('600 16px "Cairo"'),
-          document.fonts.load('700 16px "Cairo"'),
-          document.fonts.load('400 16px "Amiri"'),
-          document.fonts.load('700 16px "Amiri"'),
+          doc.fonts.load('400 16px "Cairo"'),
+          doc.fonts.load('600 16px "Cairo"'),
+          doc.fonts.load('700 16px "Cairo"'),
+          doc.fonts.load('400 16px "Amiri"'),
+          doc.fonts.load('700 16px "Amiri"'),
         ]);
-        await document.fonts.ready;
+        await doc.fonts.ready;
+        iframe.style.height = `${doc.body.scrollHeight}px`;
 
-        const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
-        const canvas = await html2canvas(doc.body, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+        // Let the browser shape whole Arabic lines (including mixed numerals).
+        // html2canvas paints individual runs and can overlap RTL glyphs.
+        const [{ toCanvas, getFontEmbedCSS }, { jsPDF }] = await Promise.all([import("html-to-image"), import("jspdf")]);
+        const fontEmbedCSS = await getFontEmbedCSS(doc.body);
+        const canvas = await toCanvas(doc.body, { pixelRatio: 2, fontEmbedCSS, backgroundColor: "#ffffff" });
         const pdf = new jsPDF({ orientation: "p", unit: "mm", format: "a4" });
         const pageW = pdf.internal.pageSize.getWidth();
         const pageH = pdf.internal.pageSize.getHeight();
@@ -203,7 +209,8 @@ export function LessonLogPdfButton({
           const slice = document.createElement("canvas");
           slice.width = canvas.width;
           slice.height = Math.ceil(sliceH);
-          const ctx = slice.getContext("2d")!;
+          const ctx = slice.getContext("2d");
+          if (!ctx) throw new Error("PDF canvas unavailable");
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, slice.width, slice.height);
           ctx.drawImage(canvas, 0, rendered, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
@@ -212,7 +219,8 @@ export function LessonLogPdfButton({
           rendered += sliceH;
           page += 1;
         }
-        pdf.save(`دفتر-الدروس-${from}_${to}.pdf`);
+        const clsName = classId ? `-${classes.find((c) => c.id === classId)?.name ?? ""}` : "";
+        pdf.save(`المذكرة${clsName}-${from}_${to}.pdf`);
       } finally {
         iframe.remove();
       }
@@ -232,6 +240,12 @@ export function LessonLogPdfButton({
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-background/70 p-2 text-sm">
           <label className="flex items-center gap-1">من <input type="date" className="field-input" value={from} onChange={(e) => setFrom(e.target.value)} /></label>
           <label className="flex items-center gap-1">إلى <input type="date" className="field-input" value={to} onChange={(e) => setTo(e.target.value)} /></label>
+          <select className="field-input" value={classId} onChange={(e) => setClassId(e.target.value)}>
+            <option value="">كل الأقسام</option>
+            {classes.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
           <button type="button" className="btn-primary" disabled={busy} onClick={() => void generate()}>
             {busy ? "…" : "إنشاء"}
           </button>

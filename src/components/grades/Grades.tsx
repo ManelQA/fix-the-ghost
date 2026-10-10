@@ -449,17 +449,17 @@ export function StudentGrades({ client, classId, studentId, trimester = "" }: { 
           </span>
         ) : null}
       </div>
-      {behavior.length > 0 && behavior[0] ? (
+      {behaviorFirst ? (
         <div className="resource-card mt-4 flex flex-wrap items-center justify-between gap-3 p-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <HeartHandshake size={16} /> السلوك
             </div>
             <div className="mt-0.5 text-xs text-muted-foreground">{BEHAVIOR_DESCRIPTION}</div>
-            {behavior[0].comment ? <div className="mt-1 text-xs text-foreground">{behavior[0].comment}</div> : null}
+            {behaviorFirst.comment ? <div className="mt-1 text-xs text-foreground">{behaviorFirst.comment}</div> : null}
           </div>
           <span className="rounded-full bg-success/10 px-3 py-1 text-sm font-bold text-success">
-            {fmt(behavior[0].grade)}/20
+            {fmt(behaviorFirst.grade)}/20
           </span>
         </div>
       ) : null}

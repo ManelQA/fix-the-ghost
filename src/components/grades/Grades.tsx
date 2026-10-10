@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ClipboardCheck, GraduationCap, Plus } from "lucide-react";
+import { ClipboardCheck, GraduationCap, HeartHandshake, Plus } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { formatDayLabel, type AgendaRow } from "@/components/agenda/useAgenda";
@@ -9,6 +9,27 @@ import { trimesterOf } from "@/lib/trimesters";
 type Client = SupabaseClient<Database>;
 type ClassRow = Database["public"]["Tables"]["classes"]["Row"];
 export type GradeRow = Database["public"]["Tables"]["evaluation_grades"]["Row"];
+
+/** Note de comportement (السلوك) — table behavior_grades. */
+export type BehaviorRow = {
+  id: string;
+  student_id: string;
+  teacher_id: string;
+  class_id: string | null;
+  grade: number;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export const BEHAVIOR_DESCRIPTION = "الجدية في القسم و العناية بالكراريس";
+
+/** Accès non typé à behavior_grades (types régénérés après application de la migration). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const behaviorTable = (client: Client) => (client as any).from("behavior_grades") as {
+  select: (cols?: string) => any;
+  upsert: (row: object, opts: object) => Promise<{ error: { message: string } | null }>;
+};
 
 const fmt = (n: number) => Number(n).toLocaleString("ar-MA", { maximumFractionDigits: 2 });
 

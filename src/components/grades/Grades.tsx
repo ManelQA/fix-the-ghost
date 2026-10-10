@@ -420,12 +420,17 @@ export function StudentGrades({ client, classId, studentId, trimester = "" }: { 
     [allRows, trimester],
   );
   const [grades, setGrades] = useState<GradeRow[]>([]);
+  const [behavior, setBehavior] = useState<BehaviorRow[]>([]);
   useEffect(() => {
     client
       .from("evaluation_grades")
       .select("*")
       .eq("student_id", studentId)
       .then(({ data }) => setGrades(data ?? []));
+    behaviorTable(client)
+      .select("*")
+      .eq("student_id", studentId)
+      .then(({ data }: { data: BehaviorRow[] | null }) => setBehavior(data ?? []));
   }, [client, studentId]);
 
   const graded = grades.filter((g) => rows.some((r) => r.id === g.evaluation_id));

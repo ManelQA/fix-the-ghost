@@ -163,6 +163,7 @@ export function ClassStudents({
                       {STATUS_LABEL[s.status] ?? s.status}
                     </span>
                     <AddGradeButton client={client} teacherId={teacherId} studentId={s.id} classId={s.class_id} />
+                    <BehaviorGradeButton client={client} teacherId={teacherId} studentId={s.id} classId={s.class_id} />
                     <HomeworkStatusButton client={client} teacherId={teacherId} studentId={s.id} classId={s.class_id} />
                     <AddAbsenceButton client={client} teacherId={teacherId} studentId={s.id} classId={s.class_id} />
                   </li>

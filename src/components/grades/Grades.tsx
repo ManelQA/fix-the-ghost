@@ -435,6 +435,7 @@ export function StudentGrades({ client, classId, studentId, trimester = "" }: { 
 
   const graded = grades.filter((g) => rows.some((r) => r.id === g.evaluation_id));
   const avg = graded.length ? graded.reduce((s, g) => s + Number(g.grade), 0) / graded.length : null;
+  const behaviorFirst = behavior[0];
 
   return (
     <section className="text-start">

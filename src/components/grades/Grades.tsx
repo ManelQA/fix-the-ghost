@@ -308,6 +308,109 @@ export function AddGradeButton(props: {
   );
 }
 
+/** Bouton enseignant : définir / modifier la note de comportement (السلوك) d'un élève. */
+export function BehaviorGradeButton({
+  client,
+  teacherId,
+  studentId,
+  classId,
+}: {
+  client: Client;
+  teacherId: string;
+  studentId: string;
+  classId: string | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [existing, setExisting] = useState<BehaviorRow | null>(null);
+  const [grade, setGrade] = useState("");
+  const [comment, setComment] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    const { data } = await behaviorTable(client)
+      .select("*")
+      .eq("student_id", studentId)
+      .eq("teacher_id", teacherId)
+      .maybeSingle();
+    const row = (data ?? null) as BehaviorRow | null;
+    setExisting(row);
+    setGrade(row ? String(row.grade) : "");
+    setComment(row?.comment ?? "");
+  }, [client, studentId, teacherId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const n = Number(grade.replace(",", "."));
+    if (!Number.isFinite(n) || n < 0 || n > 20) return setMsg("النقطة يجب أن تكون بين 0 و 20.");
+    setBusy(true);
+    setMsg(null);
+    const { error } = await behaviorTable(client).upsert(
+      {
+        student_id: studentId,
+        teacher_id: teacherId,
+        class_id: classId,
+        grade: n,
+        comment: comment.trim() || null,
+      },
+      { onConflict: "student_id,teacher_id" },
+    );
+    setBusy(false);
+    if (error) {
+      console.error("[behavior] save failed", error);
+      setMsg("تعذّر حفظ النقطة.");
+      return;
+    }
+    setSaved(true);
+    setOpen(false);
+    void load();
+  };
+
+  return (
+    <div className="w-full">
+      <button
+        type="button"
+        className="btn-text inline-flex items-center gap-1 text-xs"
+        onClick={() => {
+          setOpen((v) => !v);
+          setSaved(false);
+          setMsg(null);
+        }}
+      >
+        <HeartHandshake size={14} /> {open ? "إغلاق" : existing ? `السلوك: ${fmt(existing.grade)}/20` : "نقطة السلوك"}
+      </button>
+      {saved ? <span className="ms-2 text-xs text-success">تم حفظ نقطة السلوك.</span> : null}
+      {open ? (
+        <form onSubmit={save} className="mt-2 grid w-full gap-2 sm:grid-cols-[1fr_2fr_auto]">
+          <input
+            className="field-input text-sm"
+            inputMode="decimal"
+            placeholder="نقطة السلوك /20"
+            value={grade}
+            onChange={(e) => setGrade(e.target.value)}
+            aria-label="نقطة السلوك"
+          />
+          <input
+            className="field-input text-sm"
+            placeholder="ملاحظة (اختياري)"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+          />
+          <button type="submit" className="btn-primary text-sm" disabled={busy}>
+            {busy ? "…" : "حفظ"}
+          </button>
+          {msg ? <p className="text-xs text-destructive sm:col-span-3">{msg}</p> : null}
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
 /* ------------------------------ Student side ------------------------------ */
 
 export function StudentGrades({ client, classId, studentId, trimester = "" }: { client: Client; classId: string | null; studentId: string; trimester?: string }) {

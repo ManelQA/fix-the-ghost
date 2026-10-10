@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { shiftDay, toDateKey } from "./useAgenda";
 
-/** Mois en arabe (usage maghrébin). */
+/** Mois en arabe (usage algérien). */
 export const MONTHS_AR = [
   "جانفي",
   "فيفري",
